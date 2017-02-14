@@ -2,6 +2,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{array}
+\usepackage{booktabs}
 \usepackage{caption}
 \usepackage{enumitem}
 \usepackage{graphicx}
@@ -16,6 +17,7 @@
 \definecolor{myGray}{gray}{0.8}
 
 \newcommand\rankeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily rank}}}{=}}}
+\newcommand{\bigcell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}
 
 \setlist[itemize]{noitemsep}  % remove space between list items
 
@@ -23,27 +25,26 @@
 
 \author{Garrick Sherman}
 
-\title{Document Expansion with External Collections for Information Retrieval}
+\title{Relevance Modeling with Documents Expanded Using External Collections}
 
 \maketitle
 \begin{abstract}
+Document expansion has been shown to improve the performance of information retrieval systems by augmenting documents' term probability estimates with those of similar documents, producing higher quality document representations. We propose a method to further improve document models by utilizing external collections as part of the document expansion process. Our approach is based on relevance modeling, a popular form of pseudo-relevance feedback; however, where relevance modeling is concerned with \textit{query} expansion, we are concerned with \textit{document} expansion. Our experiments demonstrate that the proposed model improves ad-hoc document retrieval performance on a variety of corpus types, with a particular benefit on more heterogeneous collections of documents.
 \end{abstract}
 
 \section{Introduction}\label{section.intro}
 
-When using language models (LMs) to perform document retrieval, we treat the query and document texts as observations from unseen (and unobservable) probabilistic processes. In the query likelihood (QL) retrieval model, we rank each document by the likelihood that its language model would ``generate'' the query text. However, if the query is a sample from an underlying stochastic process, it is generally too sparse to fully represent an informtion need.
+%When using language models (LMs) to perform document retrieval, we treat the query and document texts as observations from unseen (and unobservable) probabilistic processes. In the query likelihood (QL) retrieval model, we rank each document by the likelihood that its language model would ``generate'' the query text. However, if the query is a sample from an underlying stochastic process, it is generally too sparse to fully represent an informtion need.
 
-Relevance modeling is an extremely influential pseudo-relevance feedback technique that helps to allievate the problem of vocabulary mismatch. Instead of assuming that queries are observations sampled from \textit{document} models, we assume that both queries and documents are observations sampled from a \textit{relevance} model (RM) \cite{Lavrenko2001}. We can use this idea to expand the query representation into an estimate of the relevance model (see Section \ref{section.expanding.model.rm} for more details) and rank documents by the similarity of their estimated language model to the estimated RM.
+Relevance modeling is an extremely influential pseudo-relevance feedback technique based on language modeling in which we assume that both queries and documents are observations sampled from a \textit{relevance} model (RM) \cite{Lavrenko2001}, which is a probability distribution over terms in relevant documents. Because we do not have true relevance feedback, relevance modeling makes use of the query likelihood, $P(Q|D)$, to quantify the degree to which each document should contribute to the final model $R$. However, since no document is perfectly representative of its underlying generative model, we may be reasonably concerned that our estimate of $P(Q|D)$ is the result of chance. That is, there is no guarantee that $D$ is a representative sample from $R$. The quality of our RM, therefore, may benefit from a higher quality document representation than that which is available in the collection.
 
-As a form of pseudo-relevance feedback, part of the relevance modeling process involves assuming that top-ranked documents are relevant to the query. Although this assumption is not uniformly true, it is true of enough top-ranked documents that the estimated RM will be of good quality. That is, initially retrieved documents provide a good estimate of the underlying relevance model \textit{in their aggregate}; taken individually, documents are not assumed to accurately represent the underlying RM.
+We employ two techniques to attempt to improve our document language models: document expansion and the use of external document collections. Expandeded documents are expected to exhibit less random variation in term frequencies, improving probability estimates. We hope that estimates may be further refined by expanding documents using \textit{external} collections, thereby avoiding any term bias that relevant documents in an individual collection may exhibit.
 
-% We suggest that, given that a top-ranked document is, like a query, considered a limited observation of terms from a relevance model, documents may be expanded to better reflect their underlying relevance model. In this paper, we propose a method of document expansion that closely mirrors the process of relevance modeling. This document expansion process serves many of the same roles as traditional relevance modeling without excluding the use of RMs; indeed, our document expansion process is complementary to query expansion.
+%This concern applies to both high and low estimates of $P(Q|D)$, and, if true, we would expect this problem to affect the quality of our relevance models. We suggest that this may be solved by expanding documents: adding terms to a document should improve our estimates of the underlying language model and in turn improve the quality of retrieval results and relevance models based on these expanded documents.
 
-Relevance modeling makes use of a query likelihood weight, $P(Q|D)$, which helps to quantify the degree to which each document should contribute to the final RM. However, given that individual documents are not considered accurate representations of the relevance model $R$, we may reasonably be concerned that our estimate of $P(Q|D)$ is the result of chance. This concern applies to both high and low estimates of $P(Q|D)$, and, if true, we would expect this problem to affect the quality of our relevance models. We suggest that this may be solved by expanding documents: adding terms to a document should improve our estimates of the underlying language model and in turn improve the quality of retrieval results and relevance models based on these expanded documents.
+%We can use this idea to expand the query representation into an estimate of the relevance model (see Section \ref{section.expanding.model.rm} for more details) and rank documents by the similarity of their estimated language model to the estimated RM.
 
-In this paper, we propose a method of document expansion that closely mirrors the process of relevance modeling. This document expansion process serves many of the same roles as traditional relevance modeling without excluding the use of RMs; indeed, our document expansion process is complementary to query expansion. However, the concerns that lead us to expand documents in the first place---potentially inaccurate term probability estimates drawn from top-ranked documents---also apply to our document expansion procedure.
-
-To help alleviate this, we introduce a general method of incorporating external document collections into the document expansion process. Our idea is that, while documents in individual collections may suffer from fairly high term frequency variance and other forms of bias, documents from multiple collections will likely average out to create good general purpose estimates. Specifically, we use Wikipedia as our external collection. We believe that, as a general encyclopedia, Wikipedia is most likely to provide unbiased language model estimates; that is, estimates of $P(Q|D)$ calculated where $D$ is from Wikipedia seem likely to exhibit minimal variance.
+Our study differs from prior work in a few important ways. Previous investigations into document expansion have tended to use only the target collection to expand documents, while our work explores the use of one or more distinct collections. In contrast, most existing work involving external corpora in ad-hoc information retrieval has focused on \textit{query} expansion; we are interested in incorporating external collections for purposes of \textit{document} expansion.
 
 \section{Related Work}\label{section.related}
 
@@ -51,7 +52,7 @@ To help alleviate this, we introduce a general method of incorporating external 
 
 Document expansion has been well studied in information retrieval literature, e.g. \cite{Liu2004, Tao2006, Wei2006, Hubert2009, Singhal1999}. For example, Liu \& Croft propose a method of retrieval that uses document clusters to smooth document language models \cite{Liu2004}. Tao et al. propose a similar approach to that of Liu \& Croft, but with each document at the center of its own cluster; this helps to ensure that the expansion documents are as closely related to the target document as possible \cite{Tao2006}.
 
-Our approach takes as its starting point that of Efron, Organisciak \& Fenlon \cite{Efron2012}, who issue very short microblog documents as pseudo-queries. They then expand the original document using these microblog documents retrieved for the pseudo-query. Their approach relates closely to that of relevance modeling \cite{Lavrenko2001}. We explore the application and adaptation of their work to different scenarios. First, Efron, Organisciak \& Fenlon are concerned with microblog retrieval, in which documents are extremely short---perhaps as small as a keyword query. In contrast, we are interested in performing document expansion with more typical full-length documents, such as those found in news and web corpora. Second, while their work used only the target document collection, we propose an expansion of their method that allows for multiple expansion corpora. Finally, we investigate pairing document expansion with query expansion.
+Our approach takes as its starting point that of Efron, Organisciak \& Fenlon \cite{Efron2012}, who issue very short microblog documents as pseudo-queries. They then expand the original document using those microblog documents retrieved for the pseudo-query in a manner closely related to relevance modeling \cite{Lavrenko2001}. We explore the application and adaptation of their work to different scenarios. First, Efron, Organisciak \& Fenlon are concerned with microblog retrieval, in which documents are extremely short---perhaps as small as a keyword query. In contrast, we are interested in performing document expansion with more typical full-length documents, such as those found in news and web corpora. Second, while their work used only the target document collection, we propose an extension of their method that allows for multiple expansion corpora. Finally, we investigate pairing document expansion with query expansion.
 
 \subsection{Incorporating External Collections}\label{section.external.collections}
 
@@ -60,7 +61,7 @@ The incorporation of external collections into document retrieval is a similarly
 \section{Document Expansion Procedure}\label{section.expanding}
 
 \subsection{Underlying Retrieval Model}\label{section.expanding.model}
-Throughout this paper we rely on the language modeling retrieval framework \cite{Lafferty2001}, though this is not strictly necessary and imposes no particular mathematical constraints on our approach. More specifically, we employ the query likelihood (QL) and relevance modeling ranking methods. 
+Throughout this paper we rely on the language modeling retrieval framework \cite{Lafferty2001}. More specifically, we employ the query likelihood (QL) and relevance modeling ranking methods. 
 
 \subsubsection{Query Likelihood}\label{section.expanding.model.ql}
 
@@ -97,7 +98,7 @@ Because relevance models are prone to query drift, research has shown that linea
 	P(w|Q') = (1-\alpha) P(w|R) + \alpha P(w|Q).
 \end{flalign}
 
-\noindent $\alpha$ is a mixing parameter controlling the influence of the original query. This form of relevance model is known as ``RM3'' and is the baseline used throughout this paper.
+\noindent $\alpha$ is a mixing parameter controlling the influence of the original query. This form of relevance model is known as ``RM3.''
 
 \subsection{Expanding with Document Pseudo-Queries}\label{section.expanding.queries}
 
@@ -110,6 +111,8 @@ We now have a ranked list of tuples $\{(E_1, \pi_1)$, $(E_2, \pi_2)$, $...$, $(E
 Since this procedure does not depend on the query, we may compute $\mathcal{E}_D$ once at indexing time and reuse our expansion documents across queries. 
 
 \section{Document Expansion Retrieval Model}\label{section.model}
+
+\subsection{Basic Model}\label{section.model.basic}
 
 We would now like to incorporate our expansion documents into a retrieval model over documents. We assume that a query is generated by a mixture of the original document language model $\theta_D$ and a language model $\theta_E$ representing the expansion documents. We assume that $\theta_E$ can be estimated using the text of the expansion documents $\mathcal{E}_D$. This mixture model may be expressed as:
 %
@@ -127,7 +130,7 @@ We would now like to incorporate our expansion documents into a retrieval model 
 
 \subsection{Combining Evidence}\label{section.combining}
 
-We investigate the use of multiple collections for document expansion. We expect a more diverse set of expansion documents to result in more robust (less biased) language models at the conclusion of the expansion process.
+We investigate the use of multiple collections for document expansion. We expect a more diverse set of expansion documents to result in more robust language models at the conclusion of the expansion process.
 
 To expand a document $D$ given a set of collections $C = \{C_1, C_2, ..., C_n\}$, we first construct a set of expansion documents ${\mathcal{E}_D}_i$ using $C_i$ in the manner described in Section \ref{section.expanding}. We may incorporate these multiple sets of expansion documents by simply altering Eq. \ref{eq.ql-and-expansion} to sum over $\mathcal{E}_D$ terms:
 
@@ -139,11 +142,7 @@ To expand a document $D$ given a set of collections $C = \{C_1, C_2, ..., C_n\}$
 
 \subsection{Relevance Modeling with Expanded Documents}
 
-While our approach serves much the same role as relevance modeling, the two techniques may in fact be used simultaneously. Practically, the relevance model may be computed on either the unexpanded or the expanded documents. However, there are two reasons why we would prefer the latter case: 
-\begin{enumerate}
-	\item Given our motivating intuition that document expansion allows for the more accurate estimation of document language models, we would expect that computing an RM using expanded documents should produce a more accurate relevance model.
-	\item Part of the benefit of document expansion is that it may be performed at indexing time, so computing an RM on unexpanded documents ignores information that is already available.
-\end{enumerate}
+Our model is complementary to that of relevance modeling. Given our motivating intuition that document expansion allows for the more accurate estimation of document language models, we would expect that computing an RM using expanded documents should produce a more accurate relevance model. Further, since document expansion may be performed at indexing time, computing an RM on expanded documents is no less efficient than doing so on unexpanded documents.
 
 The addition of relevance modeling to our document expansion approach is therefore extremely straightforward: we simply compute the RM as in Eq. \ref{equation.rm1} substituting the expanded document for the original.
 
@@ -151,7 +150,7 @@ The addition of relevance modeling to our document expansion approach is therefo
 
 \subsection{Data}\label{section.evaluation.collections}
 
-Although Eq. \ref{eq.ql-and-expansion-mult} allows for an arbitrary number of collections, for now we limit ourselves to two: the collection that the document appears in and Wikipedia. To this end, we make use of the September 1, 2015 dump of English Wikipedia. We build an Indri\footnote{http://www.lemurproject.org/indri/} index over the Wikipedia page text. The text of each page serves as the ``description text'' used in Eq. \ref{eq.expansion-sum}.
+Although Eq. \ref{eq.ql-and-expansion-mult} allows for an arbitrary number of collections, for now we limit ourselves to two: the collection that the document appears in (the ``target'' collection) and Wikipedia; the latter, as a general knowledge encyclopedia, is hypothesized to yield relatively unbiased probability estimates. We build an Indri\footnote{http://www.lemurproject.org/indri/} index over the Wikipedia page text.
 
 We test our approach using several TREC datasets:
 \begin{itemize}
@@ -172,12 +171,13 @@ We test each type of expansion source individually, with documents expanded usin
 \begin{itemize}
 	\item the target collection itself, called \textit{Self},
 	\item Wikipedia, called \textit{Wiki}, or
-	\item a mixture of the target collection and Wikipedia, called \textit{Double}.
+	\item a mixture of the previous two, called \textit{Double}.
+	\item no expansion, called \textit{Baseline}
 \end{itemize}
 
-We also include \textit{Baseline} runs that employ no query expansion. For each expansion source, we test both the query likelihood and RM3 variations to determine the effect of query expansion.
+For each expansion source, both the QL and RM3 variations are tested.
 
-We remove stop words in documents and entity descriptions for all runs. For efficiency, we retrieve the top 1000 documents per query using the default Indri query likelihood implementation and re-rank these documents based on their expanded representations as described in Section \ref{section.model}.
+Stop words are removed from the query and document pseudo-query for all runs. For efficiency, we retrieve the top 1000 documents per query using the default Indri query likelihood implementation and re-rank these documents based on their expanded representations as described in Section \ref{section.model}.
 
 \subsection{Parameters}\label{section.evaluation.parameters}
 
@@ -199,20 +199,22 @@ $\alpha$ & Mixing parameter controlling the weights of the original query and re
 
 The various parameters required for our approach, along with their meanings and the values used in our experiments, are shown in Table \ref{table.parameters}. 
 
-%We sweep across values of $\lambda_{\mathcal{E}_D}$ and $n$ at intervals of 0.1 and 10 respectively to investigate the sensitivity of our model to these parameters. The results of these sweeps are shown in Figure \ref{figure.sweeps-ql} and discussed further in Section \ref{section.results}.
+For this work, we set $k$ heuristically. In principle, this parameter need not be limited beyond the length of the document; however, this would increase computation time significantly, so we have opted to set it to a reasonable value. The parameter $n$ is similarly set heuristically to 10 expansion documents; see Section \ref{section.n-sensitivity} for a discussion of the performance sensitivity to the setting of $n$.
 
-For this work, we set $k$ heuristically. In principle, this parameter need not be limited beyond the length of the document; however, this would increase computation time significantly, so we have opted to set it to the specified value. The parameter $n$ is similarly set heuristically to 10 expansion documents; see Section \ref{section.n-sensitivity} for a discussion of the performance sensitivity to the setting of $n$.
-
-%To set the two $\lambda_{\mathcal{E}_D}$ values, we use 5-fold cross validation. This entails splitting each set of topics into five random groups (folds) and using four of them in concert with relevance judgments to determine optimal parameter settings, which we test using the fifth. By using each of the five folds as the test fold once, we produce results that fully cover the topic set; we combine these results in order to perform batch evaluation. Additionally, since the quality of the results depends in part on the initial random fold creation, we run the cross-validation repeatedly 75 times and report the average metric across these repeated runs. This helps ensure that strong performance is not the result of a beneficial but random division of documents.
-
-To set the two $\lambda_{\mathcal{E}_D}$ values, we use 10-fold cross validation. This entails splitting each set of topics into ten random groups (folds) and using nine of them in concert with relevance judgments to determine optimal parameter settings, which we test using the tenth. By using each of the ten folds as the test fold once, we produce results that fully cover the topic set; we combine these results in order to perform batch evaluation. 
+The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fold cross-validation. In the training stage, we sweep over parameter values in intervals of 0.1. The results of each test fold for a given run are concatenated to form a complete set of topics.
 
 \section{Results}\label{section.results}
 
-\begin{table}[htbp]
+\begin{figure*}
 \centering
-\begin{tabular}{|c|l|l|l|l|} \hline
-{\bf Collection} & {\bf Exp. Source} & {\bf Run} & {\bf MAP} & {\bf nDCG@20} \\ \hline\hline
+\includegraphics[width=\linewidth]{figures/expansion-sweep.pdf}
+\caption{Sweeps over values of $n$, the number of expansion documents.}
+\label{figure.n-sweeps}
+\end{figure*}
+
+\begin{table}
+\begin{tabular}{|c|c|c|l|l|} \hline
+{\bf Corpus} & {\bf \bigcell{l}{Exp. \\ Source}} & {\bf Run} & {\bf MAP} & {\bf nDCG@20} \\ \hline\hline
 \rule{0pt}{2.5ex} \multirow{8}{*}{AP} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.2337 & \cellcolor{gray!50}0.4170 \\ \cline{3-5}
 \rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.3310$^\uparrow$ & \cellcolor{gray!50}0.4855$^\uparrow$ \\ \cline{2-5}
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Self} & {\it QL} & 0.2694$^\uparrow$ & 0.4519$^\uparrow$ \\ \cline{3-5}
@@ -238,35 +240,25 @@ To set the two $\lambda_{\mathcal{E}_D}$ values, we use 10-fold cross validation
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Double} & {\it QL} & 0.1759$^{S}$ & 0.3148$^{\uparrow\Uparrow SW}$ \\ \cline{3-5}
 \rule{0pt}{2.5ex} & & {\it RM3} & 0.2061$^{\uparrow\Uparrow *S}$ & 0.3082$^{\uparrow\Uparrow S}$ \\ \hline
 \end{tabular}
-\caption{Performance of runs using various expansion sources with (\textit{RM3}) and without (\textit{QL}) query expansion. Statistical significance at $\alpha = 0.05$ is marked with a variety of symbols: $\uparrow$ indicates improvement over the baseline QL run; $\Uparrow$ and $\Downarrow$ indicate improvement and decline respectively with respect to the baseline RM3 run; $^{*}$ indicates improvement over the QL run with the same expansion source; $^{S}$ and $^{W}$ indicate improvement over the \textit{self} and \textit{wiki} sources, respectively, of the same run type. Bolded runs are the highest raw score for an evaluation metric in a given collection, regardless of statistical significance.}
+\caption{Performance of runs using various expansion sources with (\textit{RM3}) and without (\textit{QL}) query expansion. Statistical significance at $p \leq 0.05$ is marked with a variety of symbols: $\uparrow$ indicates improvement over the baseline QL run; $\Uparrow$ and $\Downarrow$ indicate improvement and decline respectively with respect to the baseline RM3 run; $^{*}$ indicates improvement over the QL run with the same expansion source; $^{S}$ and $^{W}$ indicate improvement over the \textit{self} and \textit{wiki} sources, respectively, of the same run type. Bolded runs are the highest raw score for an evaluation metric in a given collection.}
 \label{table.performance}
 \end{table}
 
 Retrieval performance for various runs are shown in Table \ref{table.performance}. We use mean average precision (MAP) and normalized discounted cumulative gain at 20 (nDCG@20) to measure performance. Each metric has been optimized with 10-fold cross-validation.
 
-The results confirm that document expansion provides benefit over a baseline query likelihood run---no run performs significantly worse than the baseline, and all expansion runs in AP and all but one expansion run in Robust improve over the baseline query likelihood run. % Note that baselines correspond to $\sum_{j=1}^n \lambda_{{\mathcal{E}_D}_j} = 0.0$. 
+The results confirm that document expansion provides benefit over a baseline query likelihood run---no run performs significantly worse than the baseline, and most runs improve over the baseline query likelihood run. % Note that baselines correspond to $\sum_{j=1}^n \lambda_{{\mathcal{E}_D}_j} = 0.0$. 
 
 Performance of RM3 runs is more surprising with improvement over the baseline RM3 occurring more rarely compared to improvement over the baseline QL. The data suggest that RM3 runs may be more effective in more heterogeneous collections: there are three RM3 improvements in Robust and six in wt10g, compared to only one in AP. This makes intuitive sense since a homogeneous collection would be expected to receive less benefit from query expansion. We can also see that an RM3 run typically improves over its QL counterpart, demonstrating that relevance modeling continues to operate effectively with the introduction of document expansion.
 
-The effect of "double" runs---that is, runs expanded with both the target and external collection---was not as prominent as anticipated. In general, \textit{wiki} runs perform similarly to \textit{double} runs. However, the performance of \textit{double} runs \textit{is} visible when query expansion is ignored: five out of six \textit{double} QL runs show statistically significant improvement over \textit{wiki} QL runs. In one case (wt10g measuring nDCG@20) the \textit{double} QL run even outperforms the \textit{wiki} RM3 run with statistical significance.
+In general, \textit{wiki} runs perform similarly to \textit{double} runs. However, the strong performance of \textit{double} runs \textit{is} visible when query expansion is ignored: five out of six \textit{double} QL runs show statistically significant improvement over \textit{wiki} QL runs. In one case (wt10g measuring nDCG@20) the \textit{double} QL run even outperforms the \textit{wiki} RM3 run with statistical significance.
 
-\subsection{Sensitivity to $n$}\label{section.n-sensitivity}
+\subsection{Sensitivity to \boldmath$n$}\label{section.n-sensitivity}
 
-\begin{figure*}[!htb]
-\centering
-\includegraphics[width=\columnwidth]{figures/n-sweep.pdf}
-\caption{Sweeps over values of $n$, the number of entities, for each \textit{exp-ql} run.}
-\label{figure.n-sweeps}
-\end{figure*}
-
-Similar to $k$, the value of $n$ may theoretically equal the number of expansion documents available, i.e. $|C_E|$; in practice, of course, this is infeasible, and $n$ will be substantially smaller. We must be careful in setting the value of $n$ for computational efficiency reasons: if $n$ is set high, we must process more documents. Figure \ref{figure.n-sweeps} shows sweeps over several values of $n$ for each target collection using our established 10-fold cross validation procedure with identical folds. Happily, the performance of our approach is not sensitive to the setting of $n$, and lower values generally perform as well or better than higher values. We therefore choose the value of 10 as an apparently safe value; this is a convenient result since it allows for more efficient document expansion.
-
+Figure \ref{figure.n-sweeps} shows sweeps over several values of $n$, the number of expansion documents, for each target collection using our established 10-fold cross-validation procedure with identical folds. The sensitivity to $n$ is not pronounced at $n \geq 5$, and what little variation exists is not consistent across collections. We therefore choose the value of 10 as an apparently safe value; this is a convenient result since it allows for more efficient document expansion.
 
 \section{Conclusions}\label{section.conclusions}
 
 The results indicate that our approach for expanding documents using Wikipedia and the document's original collection produces useful data for document retrieval purposes. Our simple document expansion model performs well compared to both a query likelihood and RM3 baseline.
-
-In this paper, we have limited ourselves to using only two collections. However, future work may benefit from incorporating more collections to improve our language model estimates. Since our retrieval model performs \textit{document} expansion, we also plan to investigate its utility when paired with \textit{query} expansion techniques that employ knowledge base links.
 
 \section{Acknowledgments}\label{section.acknowledgments}
 This work was supported in part by the US National Science Foundation under Grant No. [blind]. Any opinions, findings, conclusions, or recommendations expressed are those of the authors and do not necessarily reflect the views of the National Science Foundation.
