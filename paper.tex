@@ -2,6 +2,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{array}
+\usepackage{bm}
 \usepackage{booktabs}
 \usepackage{caption}
 \usepackage{enumitem}
@@ -29,7 +30,7 @@
 
 \maketitle
 \begin{abstract}
-Document expansion has been shown to improve the performance of information retrieval systems by augmenting documents' term probability estimates with those of similar documents, producing higher quality document representations. We propose a method to further improve document models by utilizing external collections as part of the document expansion process. Our approach is based on relevance modeling, a popular form of pseudo-relevance feedback; however, where relevance modeling is concerned with \textit{query} expansion, we are concerned with \textit{document} expansion. Our experiments demonstrate that the proposed model improves ad-hoc document retrieval performance on a variety of corpus types, with a particular benefit on more heterogeneous collections of documents.
+Document expansion has been shown to improve the effectiveness of information retrieval systems by augmenting documents' term probability estimates with those of similar documents, producing higher quality document representations. We propose a method to further improve document models by utilizing external collections as part of the document expansion process. Our approach is based on relevance modeling, a popular form of pseudo-relevance feedback; however, where relevance modeling is concerned with \textit{query} expansion, we are concerned with \textit{document} expansion. Our experiments demonstrate that the proposed model improves ad-hoc document retrieval effectiveness on a variety of corpus types, with a particular benefit on more heterogeneous collections of documents.
 \end{abstract}
 
 \section{Introduction}\label{section.intro}
@@ -92,7 +93,7 @@ A relevance model takes the form of
 
 \noindent where $P(Q|D)$ is calculated as in Eq. \ref{equation.ql} and essentially weights word $w$ in $D$ by the query likelihood of the document. Relevance models are most efficient and robust when calculated over only the top terms in only the top ranked documents. These parameters are referred to as $fbTerms$ and $fbDocs$ respectively in Table \ref{table.parameters}.
 
-Because relevance models are prone to query drift, it is often desirable to linearly interpolate an RM with the original query model to improve performance:
+Because relevance models are prone to query drift, it is often desirable to linearly interpolate an RM with the original query model to improve effectiveness:
 
 \begin{flalign}\label{equation.rm3}
 	P(w|Q') = (1-\alpha) P(w|R) + \alpha P(w|Q).
@@ -159,7 +160,7 @@ We test each type of expansion source individually, with documents expanded usin
 	\item no expansion, called \textit{baseline};
 	\item the target collection itself, called \textit{self};
 	\item Wikipedia, called \textit{wiki}; or
-	\item a mixture of the previous two, called \textit{double}.
+	\item a mixture of the previous two, called \textit{combined}.
 \end{itemize}
 
 \noindent For each source, both the QL and RM3 variations are tested.
@@ -186,7 +187,7 @@ $\alpha$ & Mixing parameter controlling the weights of the original query and re
 
 The parameters required for our approach, their meanings, and the values used in our experiments are shown in Table \ref{table.parameters}. 
 
-For this work, we set $k$ heuristically. In principle, this parameter need not be limited beyond the length of the document; however, this would increase computation time significantly, so we have set it to a reasonable value. The parameter $n$ is also set heuristically; see Section \ref{section.n-sensitivity} for a discussion of the performance sensitivity to the setting of $n$.
+For this work, we set $k$ heuristically. In principle, this parameter need not be limited beyond the length of the document; however, this would increase computation time significantly, so we have set it to a reasonable value. The parameter $n$ is also set heuristically; see Section \ref{section.n-sensitivity} for a discussion of the sensitivity of our model to the setting of $n$.
 
 The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fold cross-validation. In the training stage, we sweep over parameter values in intervals of 0.1. The concatenated results of each test fold form a complete set of topics.
 
@@ -195,57 +196,60 @@ The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fo
 \begin{figure*}
 \centering
 \includegraphics[width=\linewidth]{figures/expansion-sweep.pdf}
-\caption{Sweeps over values of $n$, the number of expansion documents.}
+\caption{Sweeps over the number of expansion documents, $n = \{0, 1, 5, 10, 50\}$, for the \textit{self} and \textit{wiki} QL runs.}
 \label{figure.n-sweeps}
 \end{figure*}
 
 \begin{table}
 \begin{tabular}{|c|c|c|l|l|} \hline
 {\bf Corpus} & {\bf \bigcell{l}{Exp. \\ Source}} & {\bf Run} & {\bf MAP} & {\bf nDCG@20} \\ \hline\hline
+
 \rule{0pt}{2.5ex} \multirow{8}{*}{AP} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.2337 & \cellcolor{gray!50}0.4170 \\ \cline{3-5}
-\rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.3310$^\uparrow$ & \cellcolor{gray!50}0.4855$^\uparrow$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Self} & {\it QL} & 0.2694$^\uparrow$ & 0.4519$^\uparrow$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & 0.3295$^{\uparrow *}$ & \textbf{0.4876}$^{\uparrow *}$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.2644$^\uparrow$ & 0.4582$^\uparrow$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it  RM3} & 0.3334$^{\uparrow *}$ & 0.4811$^{\uparrow *}$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Double} & {\it QL} & 0.2774$^{\uparrow SW}$ & 0.4734$^{\uparrow SW}$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.3342}$^{\uparrow\Uparrow *S}$ & 0.4789$^\uparrow$ \\ \hline\hline
+\rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.3310$^{\underline{\uparrow}}$ & \cellcolor{gray!50}0.4855$^{\underline{\uparrow}}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Self} & {\it QL} & 0.2694$^{\underline{\uparrow}}$ & 0.4519$^{\underline{\uparrow}}$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & 0.3295$^{\underline{\uparrow *}}$ & \textbf{0.4876}$^{\underline{\uparrow *} W}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.2644$^{\underline{\uparrow}}$ & 0.4582$^{\underline{\uparrow}}$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it  RM3} & 0.3334$^{\underline{\uparrow *}}$ & 0.4811$^{\underline{\uparrow} *}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Combined} & {\it QL} & 0.2774$^{\underline{\uparrow W}S}$ & 0.4734$^{\underline{\uparrow SW}}$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.3342}$^{\underline{\uparrow *}\Uparrow S}$ & 0.4789$^{\underline{\uparrow}}$ \\ \hline\hline
+
 \rule{0pt}{2.5ex} \multirow{8}{*}{Robust} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.2183 & \cellcolor{gray!50}0.3867 \\ \cline{3-5}
-\rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.2639$^\uparrow$ & \cellcolor{gray!50}0.3908 \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Self} & {\it QL} & 0.2369$^\uparrow$ & 0.4036$^\uparrow$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & 0.2591$^{\uparrow\Downarrow *}$ & 0.3894$^{*}$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.2326$^\uparrow$ & 0.4040$^\uparrow$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.2674}$^{\uparrow *}$ & 0.4201$^{\uparrow\Uparrow *}$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Double} & {\it QL} & 0.2417$^{\uparrow W}$ & 0.4156$^{\uparrow\Uparrow SW}$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & 0.2672$^{\uparrow *S}$ & \textbf{0.4205}$^{\uparrow\Uparrow S}$ \\ \hline\hline
+\rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.2639$^{\underline{\uparrow}}$ & \cellcolor{gray!50}0.3908$^{\underline{\uparrow}}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Self} & {\it QL} & 0.2369$^{\underline{\uparrow}}$ & 0.4036$^{\underline{\uparrow}}$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & 0.2591$^{\underline{\uparrow\Downarrow *}}$ & 0.3894$^{*}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.2326$^{\underline{\uparrow}}$ & 0.4040$^\uparrow$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.2674}$^{\underline{\uparrow *S}}$ & 0.4201$^{\underline{\uparrow\Uparrow S} *}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Combined} & {\it QL} & 0.2417$^{\underline{\uparrow W}}$ & 0.4156$^{\underline{\uparrow\Uparrow W} S}$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & 0.2672$^{\underline{\uparrow *S}}$ & \textbf{0.4205}$^{\underline{\uparrow\Uparrow S}}$ \\ \hline\hline
+
 \rule{0pt}{2.5ex} \multirow{8}{*}{wt10g} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.1683 & \cellcolor{gray!50}0.2816 \\ \cline{3-5}
-\rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.1651 & \cellcolor{gray!50}0.2834 \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.1651 & \cellcolor{gray!50}0.2834$^{\underline{\uparrow}}$ \\ \cline{2-5}
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Self} & {\it QL} & 0.1660 & 0.2936 \\ \cline{3-5}
 \rule{0pt}{2.5ex} & & {\it RM3} & 0.1694$^\Uparrow$ & 0.2758$^\Downarrow$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.1780$^\uparrow$ & 0.3029$^\uparrow$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.2089}$^{\uparrow\Uparrow *}$ & \textbf{0.3085}$^{\uparrow\Uparrow}$ \\ \cline{2-5}
-\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Double} & {\it QL} & 0.1759$^{S}$ & 0.3148$^{\uparrow\Uparrow SW}$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & 0.2061$^{\uparrow\Uparrow *S}$ & 0.3082$^{\uparrow\Uparrow S}$ \\ \hline
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.1780$^{\uparrow \underline{S}}$ & 0.3029$^\uparrow$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.2089}$^{\underline{\uparrow\Uparrow *S}}$ & \textbf{0.3085}$^{\underline{\uparrow S}\Uparrow}$ \\ \cline{2-5}
+\rule{0pt}{2.5ex} & \multirow{2}{*}{\it Combined} & {\it QL} & 0.1759$^{\uparrow\Uparrow S}$ & 0.3148$^{\underline{\uparrow\Uparrow} SW}$ \\ \cline{3-5}
+\rule{0pt}{2.5ex} & & {\it RM3} & 0.2061$^{\underline{\uparrow\Uparrow *S}}$ & 0.3082$^{\underline{\uparrow\Uparrow S}}$ \\ \hline
 \end{tabular}
-\caption{Performance of runs using various expansion sources with (\textit{RM3}) and without (\textit{QL}) query expansion. Statistical significance at $p \leq 0.05$ is marked with a variety of symbols: $\uparrow$ indicates improvement over the baseline QL run; $\Uparrow$ and $\Downarrow$ indicate improvement and decline respectively with respect to the baseline RM3 run; $^{*}$ indicates improvement over the QL run with the same expansion source; $^{S}$ and $^{W}$ indicate improvement over the \textit{self} and \textit{wiki} sources, respectively, of the same run type. Bolded runs are the highest raw score for an evaluation metric in a given collection.}
-\label{table.performance}
+\caption{Performance of runs using various expansion sources with (\textit{RM3}) and without (\textit{QL}) query expansion. Statistical significance at $p \leq 0.05$ is marked with a variety of symbols; underlining further designates $p \leq 0.01$: $\uparrow$ indicates improvement over the baseline QL run; $\Uparrow$ and $\Downarrow$ indicate improvement and decline respectively with respect to the baseline RM3 run; $^{*}$ indicates improvement over the QL run with the same expansion source; $^{S}$ and $^{W}$ indicate improvement over the \textit{self} and \textit{wiki} sources, respectively, of the same run type. Bolded runs are the highest raw score for an evaluation metric in a given collection.}
+\label{table.effectiveness}
 \end{table}
 
-Retrieval performance of each run is shown in Table \ref{table.performance}. We measure performance with mean average precision (MAP) and normalized discounted cumulative gain at 20 (nDCG@20). Each metric is optimized with 10-fold cross-validation.
+Retrieval effectiveness of each run is shown in Table \ref{table.effectiveness}. We measure effectiveness with mean average precision (MAP) and normalized discounted cumulative gain at 20 (nDCG@20). Each metric is optimized with 10-fold cross-validation.
 
 The results confirm that document expansion provides benefit over a baseline query likelihood run---no run performs significantly worse than the baseline, and most runs improve over the baseline QL run. % Note that baselines correspond to $\sum_{j=1}^n \lambda_{{\mathcal{E}_D}_j} = 0.0$. 
 
 Performance of RM3 runs is more surprising with improvement over the baseline RM3 occurring more rarely compared to improvement over the baseline QL. The data suggest that RM3 runs may be more effective in more heterogeneous collections: there are three RM3 improvements in robust and six in wt10g, compared to only one in AP. This makes intuitive sense since a homogeneous collection would be expected to receive less benefit from query expansion. We can also see that an RM3 run typically improves over its QL counterpart, demonstrating that relevance modeling continues to operate effectively with the introduction of document expansion.
 
-In general, \textit{wiki} runs perform similarly to \textit{double} runs. However, the strong performance of \textit{double} runs is visible when query expansion is ignored: five out of six \textit{double} QL runs show statistically significant improvement over \textit{wiki} QL runs. In one case (wt10g measuring nDCG@20) the \textit{double} QL run even outperforms the \textit{wiki} RM3 run with statistical significance.
+In general, \textit{wiki} runs perform similarly to \textit{combined} runs. However, the strong performance of \textit{combined} runs is visible when query expansion is ignored: five out of six \textit{combined} QL runs show statistically significant improvement over \textit{wiki} QL runs. In one case (wt10g measuring nDCG@20) the \textit{combined} QL run even outperforms the \textit{wiki} RM3 run with statistical significance.
 
 \subsection{Sensitivity to \boldmath$n$}\label{section.n-sensitivity}
 
-Figure \ref{figure.n-sweeps} shows sweeps over several values of $n$, the number of expansion documents, for the \textit{single} and \textit{wiki} QL runs using our established cross-validation procedure with identical folds. The sensitivity to $n$ is not pronounced at $n \geq 5$, and what little variation exists is not consistent across collections. We therefore set the value of 10, an apparently safe value, for all other runs. This is a convenient result since it allows for more efficient document expansion.
+Figure \ref{figure.n-sweeps} shows sweeps over several values of $n$, the number of expansion documents, for the \textit{self} and \textit{wiki} QL runs using our established cross-validation procedure with identical folds. The sensitivity to $n$ is not pronounced at $n \geq 5$, and what little variation exists is not consistent across collections. We therefore set the value of 10, an apparently safe value, for all other runs. This is a convenient result since it allows for more efficient document expansion.
 
 \section{Conclusions}\label{section.conclusions}
 
-The results indicate that our approach for document expansion work well in general and especially in concert with traditional relevance modeling techniques. We find that we can improve on traditional document expansion by incorporating external collections into the expansion process. In the future, we plan to investigate in detail the relationship between homogeneity of documents and the performance of our model.
+The results indicate that our approach for document expansion work well in general and especially in concert with traditional relevance modeling techniques. We find that we can improve on traditional document expansion by incorporating external collections into the expansion process. In the future, we plan to investigate in detail the relationship between homogeneity of documents and the effectiveness of our model.
 
 \section{Acknowledgments}\label{section.acknowledgments}
 This work was supported in part by the US National Science Foundation under Grant No. [blind]. Any opinions, findings, conclusions, or recommendations expressed are those of the authors and do not necessarily reflect the views of the National Science Foundation.
