@@ -24,7 +24,8 @@
 
 \begin{document}
 
-\author{Garrick Sherman}
+%\author{Garrick Sherman}
+\author{[Blind]}
 
 \title{Relevance Modeling with Documents Expanded Using External Collections}
 
@@ -69,11 +70,10 @@ Throughout this paper we rely on the language modeling retrieval framework \cite
 Given a query $Q$ and a document $D$, we rank documents on $P(Q | \theta_D)$, where $\theta_D$ is the language model (typically a multinomial over the vocabulary $V$) that generated the text of document $D$.  Assuming independence among terms and a uniform distribution over documents, each document is scored by
 
 \begin{flalign}\label{equation.ql}
-\log P(Q | D) = \prod_{w \in Q} P(w | Q) \cdot \log P(w | \theta_D) .
+P(Q | D) = \prod_{w \in Q} P(w | \theta_D)^{c(w,Q)}
 \end{flalign}
 
-\noindent We follow standard procedures for estimating the probabilities in Eq. \ref{equation.ql}.  We simply use the maximum likelihood estimate of $\hat{P}(w | Q) = \frac{c(w, Q)}{|Q|}$ where $c(w, Q)$ is the frequency of word $w$ in $Q$.  For $P(w | \theta_D)$ we estimate a smoothed language model by assuming that document language models
-in a given collection have a Dirichlet prior distribution:
+\noindent where $c(w, Q)$ is the frequency of word $w$ in $Q$. We follow standard procedures for estimating $P(w|\theta_D)$ in Eq. \ref{equation.ql}, estimating a smoothed language model by assuming that document language models in a given collection have a Dirichlet prior distribution:
 
 \begin{flalign}\label{equation.ql-dirichlet}
 \hat{P}(w | \theta_D) = \frac{c(w, D) + \mu \hat{P}(w | C)}{|D| + \mu} 
@@ -85,13 +85,13 @@ in a given collection have a Dirichlet prior distribution:
 
 Relevance modeling is a form of pseudo-relevance feedback that uses top ranked documents to estimate a language model representing documents relevant to a query \cite{Lavrenko2001}. %This language model, known as a relevance model, acts as a form of query expansion and is generally used with the KL divergence retrieval model \cite{Zhai2006} to score documents.
 
-A relevance model takes the form of
+Assuming uniform document prior probabilities, relevance models take the form of
 
 \begin{flalign}\label{equation.rm1}
-	P(w|R) = \sum_{D \in C} P(D) P(w|D) P(Q|D)
+	P(w|R) = \sum_{D \in C} P(w|D) P(Q|D)
 \end{flalign}
 
-\noindent where $P(Q|D)$ is calculated as in Eq. \ref{equation.ql} and essentially weights word $w$ in $D$ by the query likelihood of the document. Relevance models are most efficient and robust when calculated over only the top terms in only the top ranked documents. These parameters are referred to as $fbTerms$ and $fbDocs$ respectively in Table \ref{table.parameters}.
+\noindent where $P(Q|D)$ is calculated as in Eq. \ref{equation.ql} and essentially weights word $w$ in $D$ by the query likelihood of the document. Relevance models are most efficient and robust when calculated over only the top ranked documents and limited to the top terms. These parameters are referred to as $fbDocs$ and $fbTerms$ respectively in Table \ref{table.parameters}.
 
 Because relevance models are prone to query drift, it is often desirable to linearly interpolate an RM with the original query model to improve effectiveness:
 
@@ -105,7 +105,7 @@ Because relevance models are prone to query drift, it is often desirable to line
 
 To expand a document $D$, we begin by treating the text of $D$ as a pseudo-query which we pose against a collection of documents $C_E$.  To transform a document into a pseudo-query we apply two transformations.  First we remove all terms from $D$ that appear in the standard Indri stoplist\footnote{http://www.lemurproject.org/stopwords/stoplist.dft}.  Next, we prune our pseudo-query by retaining only the $0 < k \leq |D|$ most frequent words in the stopped text of $D$.  The integer variable $k$ is a parameter that we choose empirically.  Let $Q_D$ be the pseudo-query for $D$, consisting of the text of $D$ after our two transformations are applied.
 
-We obtain a ranking of related documents, which we call expansion documents, by running $Q_D$ over an index $C_E$. More formally, we rank the documents in $C_E$ against $D$ using Eq. \ref{equation.ql}, substituting $Q_D$ for the query and $E_i$---the text of the $i^{th}$ expansion document---for the document. Let $\pi_i$ be the log-probability for expansion document $E_i$ with respect to $D$ given by Eq. \ref{equation.ql}.  
+We rank related documents, called expansion documents, by running $Q_D$ over an index $C_E$. More formally, we rank the documents in $C_E$ against $D$ using Eq. \ref{equation.ql}, substituting $Q_D$ for the query and $E_i$---the $i^{th}$ expansion document---for the document. Let $\pi_i$ be the log-probability for expansion document $E_i$ with respect to $D$ given by Eq. \ref{equation.ql}.  
 
 We now have a ranked list of tuples $\{(E_1, \pi_1)$, $(E_2, \pi_2)$, $...$, $(E_N, \pi_N)\}$ relating expansion document $E_i$ to $D$ with log-probability $\pi_i$. We take the top $n$ documents where $0 \leq n \leq N$. We call these top documents $\mathcal{E}_D$ and designate them as our expansion documents for $D$.  Finally, we exponentiate each $\pi_i$ and normalize our retrieval scores so they sum to 1 over the $n$ retained documents.  Assuming a uniform prior over documents, we now have a probability distribution over our $n$ retained documents: $P(E | D)$.
 
@@ -153,14 +153,12 @@ These datasets provide a good range of collection types, from relatively homogen
 
 For each collection, we produce eight runs representing a combination of expansion source and query expansion type.
 
-\subsubsection{Expansion Source}\label{section.evaluation.runs.expansion}
-
-We test each type of expansion source individually, with documents expanded using:
+We produce runs with expansion documents from:
 \begin{itemize}
-	\item no expansion, called \textit{baseline};
 	\item the target collection itself, called \textit{self};
-	\item Wikipedia, called \textit{wiki}; or
-	\item a mixture of the previous two, called \textit{combined}.
+	\item Wikipedia, called \textit{wiki};
+	\item a mixture of the previous two, called \textit{combined}; or
+	\item no expansion, called \textit{baseline};
 \end{itemize}
 
 \noindent For each source, both the QL and RM3 variations are tested.
@@ -249,10 +247,11 @@ Figure \ref{figure.n-sweeps} shows sweeps over several values of $n$, the number
 
 \section{Conclusions}\label{section.conclusions}
 
-The results indicate that our approach for document expansion work well in general and especially in concert with traditional relevance modeling techniques. We find that we can improve on traditional document expansion by incorporating external collections into the expansion process. In the future, we plan to investigate in detail the relationship between homogeneity of documents and the effectiveness of our model.
+The results indicate that our approach for document expansion works well in general and especially in concert with traditional relevance modeling. We find that we can improve on traditional document expansion by incorporating external collections into the expansion process. In the future, we plan to investigate in detail the relationship between homogeneity of documents and the effectiveness of our model.
 
-\section{Acknowledgments}\label{section.acknowledgments}
-This work was supported in part by the US National Science Foundation under Grant No. [blind]. Any opinions, findings, conclusions, or recommendations expressed are those of the authors and do not necessarily reflect the views of the National Science Foundation.
+%\section{Acknowledgments}\label{section.acknowledgments}
+
+%This work was supported in part by the US National Science Foundation under Grant No. [blind]. Any opinions, findings, conclusions, or recommendations expressed are those of the authors and do not necessarily reflect the views of the National Science Foundation.
 
 
 \bibliographystyle{abbrv}
