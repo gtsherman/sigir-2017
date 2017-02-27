@@ -23,9 +23,9 @@
 
 \begin{document}
 
-\author{Garrick Sherman}
+\author{[Blind]}
 
-\title{}
+\title{Pseudo-Relevance Query Performance Prediction for Information Retrieval}
 
 \maketitle
 \begin{abstract}
@@ -41,11 +41,49 @@ In this work, we propose a predictor inspired by pseudo-relevance feedback techn
 
 \section{Related Work}\label{section.related}
 
-A great deal of research has focused on QPP. The most famous predictor is query clarity, which is simply the KL-divergence of an expanded query model and the collection as a whole \cite{Cronen-Townsend2002}. We incorporate query clarity as a baseline in our work.
+A great deal of research has focused on QPP \cite{Carmel2010}. The most famous predictor is query clarity (QC) \cite{Cronen-Townsend2002}. Clarity is simply the KL-divergence of an expanded query language model and the collection as a whole:
+
+\begin{flalign}\label{eq.clarity}
+\sum_{w \in V} P(w|Q) \log \frac{P(w|Q)}{P(w|C)}
+\end{flalign}
+
+\noindent where $w$ is a term in the vocabulary $V$, $P(w|C)$ is the maximum likelihood estimate of $w$ in collection $C$, and $P(w|Q)$ is the probability of $w$ as computed by a relevance model \cite{Lavrenko2001}. 
+
+%The latter are computed by
+
+% \begin{flalign}\label{eq.rm}
+% \sum_{D \in C} P(w|D) P(Q|D).
+% \end{flalign}
+% 
+% \noindent $P(Q|D)$ is computed as in Eq. 
+
+The idea underlying clarity is that a query whose top ranked documents are linguistically distinct from a generic background language model has likely done a better job identifying relevant documents than one whose top ranked documents resemble the background model. Several modifications of query clarity have been proposed, e.g. \cite{Diaz2004, Hauff2008, He2004}. We incorporate traditional query clarity as a baseline in our work.
 
 One class of query performance predictor that is related to our work is query perturbation \cite{Vinay2006, Yom-Tov2005, Zhou2007}. These methods alter the query and measure the similarity of the results list across query variations; if the result list remains relatively constant, the system is believed to have little difficulty with the query. Our proposed method is fundamentally a form of query perturbation, with the alternative query forms derived from feedback documents.
 
+Zhou \& Croft's query feedback (QF) technique constructs a new query from the top ranked documents \cite{Zhou2007}. First, QF issues $Q$ against collection $C$, retrieving a results list $L$. By ranking each term $w$ in $L$ according to its contribution to query clarity (that is, its contribution to the KL-divergence with the collection) and selecting the top ranked terms, a new query $Q'$ is constructed. After retrieving results list $L'$ for $Q'$, the percentage overlap between $L$ and $L'$ is computed. This overlap is the QF score. This technique bears a resemblance to our proposed method: like ours, the top ranked results give rise to alternate queries, and the results lists of the original and alternate queries are compared. Unlike ours, however, QF produces only a single alternate query; our method also differs in its scoring component, which directly models retrieval performance rather than simply measuring overlap as QF does. Because of its similarity to our method, we use query feedback as a second baseline.
+
 \section{Pseudo-Relevance Performance Predictor}\label{section.method}
+
+\subsection{Underlying Retrieval Model}\label{section.method.underlying}
+
+In this paper, we employ the standard multinomial query likelihood (QL) retrieval model to rank the relevance of a document $D$ to query $Q$, although it should be noted that this model is not required by our query performance predictor.
+
+Assuming a uniform distribution over documents, QL scores $D$ by the following:
+
+\begin{flalign}\label{eq.ql}
+P(Q|D) = \prod_{i=1}^{|Q|} P(q_i|\theta_D)
+\end{flalign}
+
+\noindent where $q_i$ is a word in $Q$ and $P(q_i|\theta_D)$ is estimated using Dirichlet smoothing:
+
+\begin{flalign}\label{eq.dirichlet}
+P(q_i|\theta_D) = \frac{c(q_i,D) + \mu \hat{P}(q_i|C)}{|D| + \mu}
+\end{flalign}
+
+\noindent where $c(q_i,D)$ is the frequency of $q_i$ in $D$, $|D|$ is the length of the document, $\hat{P}(q_i|C)$ is the maximum likelihood estimate of $q_i$ in collection $C$, and $\mu$ is a parameter. We set $\mu = 2500$ for all runs.
+
+\subsection{Predicting Query Performance}\label{section.method.predicting}
 
 Our query performance predictor, which we call the pseudo-relevance performance predictor (PRPP), is inspired by the pseudo-relevance feedback technique of treating the top ranked documents as relevant to the query. Doing so allows us to directly model the robustness of query performance metrics to query perturbation. The broad steps of our approach are as follows:
 
@@ -95,48 +133,63 @@ We also make use of Wikipedia\footnote{http://en.wikipedia.org} as an external c
 \section{Results}\label{section.results}
 
 % \begin{table}
-% \begin{tabular}{|l|l|c|c|c|c|} \hline\hline
-% & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \hline\hline
-% Corpus & Predictor & Pearson & Kendall & Pearson & Kendall \\ \hline\hline
-% \multirow{3}{*}{AP} & Query clarity & 0.3936 & \textbf{0.3627} & 0.1267 & 0.1194 \\ \cline{2-6}
-% & Query feedback & 0.4244 & 0.3010 & \textbf{0.4467} & 0.3100 \\ \cline{2-6}
-% & PRPP & \textbf{0.5575} & 0.2904 & 0.1720 & \textbf{0.3110} \\ \hline\hline
-% \multirow{3}{*}{wt10g} & Query clarity & 0.2206 & 0.2606 & 0.3436 & 0.2622 \\ \cline{2-6}
-% & Query feedback & 0.3847 & 0.2327 & 0.2921 & 0.1860 \\ \cline{2-6}
-% & PRPP & -0.0132 & 0.3307 & 0.1695 & 0.2046 \\ \hline\hline
-% \multirow{3}{*}{Robust} & Query clarity & 0.4451 & 0.3681 & 0.2427 & 0.2821 \\ \cline{2-6}
-% & Query feedback & 0.4685 & 0.3112 & 0.4526 & 0.3073 \\ \cline{2-6}
-% & PRPP & \textbf{0.5438} & 0.3874 & 0.2232 & 0.3323 \\ \hline\hline
+% \begin{tabular}{|l|l|c|c|c|c|} \hline
+% & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
+% Corpus & Pred. & Med. & Max & Med. & Max \\ \hline\hline
+% \multirow{4}{*}{AP} & QC & \textbf{0.5280} & \textbf{0.6148} & 0.3564 & 0.4284 \\ \cline{2-6}
+% & QF & 0.4240 & 0.5637 & 0.3202 & 0.4467 \\ \cline{2-6}
+% & PRPP-flip & 0.5020 & 0.5661 & \textbf{0.4026} & \textbf{0.5092} \\ \cline{2-6}
+% & PRPP & 0.5030 & 0.6115 & 0.4025 & 0.4880 \\ \hline\hline
+% \multirow{4}{*}{wt10g} & QC & 0.2232 & 0.3636 & 0.0943 & 0.3436 \\ \cline{2-6}
+% & QF & 0.1624 & 0.3847 & 0.0881 & 0.3613 \\ \cline{2-6}
+% & PRPP-flip & 0.2910 & 0.4665 & 0.2367 & 0.3949 \\ \cline{2-6}
+% & PRPP & \textbf{0.2850} & \textbf{0.4615} & \textbf{0.2529} & \textbf{0.4173} \\ \hline\hline
+% \multirow{4}{*}{Robust} & QC & 0.4240 & 0.5114 & 0.3129 & 0.3914 \\ \cline{2-6}
+% & QF & 0.2203 & 0.5073 & 0.1708 & 0.4926 \\ \cline{2-6}
+% & PRPP-flip & 0.3826 & 0.5743 & 0.3540 & 0.5094 \\ \cline{2-6}
+% & PRPP & \textbf{0.4381} & \textbf{0.5791} & \textbf{0.3222} & \textbf{0.5047} \\ \hline
 % \end{tabular}
-% \caption{Performance of predictors with Pearson's $r$ and Kendall's $\tau$ correlation.}
-% \label{table.results.self}
+% \caption{Median and maximum Pearson's $r$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
+% \label{table.results.self.pearson}
 % \end{table}
 % 
 % \begin{table}
-% \begin{tabular}{|l|c|c|c|c|} \hline\hline
-% & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \hline\hline
-% Predictor & Pearson & Kendall & Pearson & Kendall \\ \hline\hline
-% Query clarity &  &  &  &  \\ \hline\hline
-% Query feedback &  &  &  &  \\ \hline\hline
-% PRPP &  &  &  &  \\ \hline\hline
+% \begin{tabular}{|l|l|c|c|c|c|} \hline
+% & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
+% Corpus & Pred. & Med. & Max & Med. & Max \\ \hline\hline
+% \multirow{4}{*}{AP} & QC & 0.3609 & 0.4440 & 0.2166 & 0.2807 \\ \cline{2-6}
+% & QF & 0.3259 & 0.4215 & 0.2042 & 0.3100 \\ \cline{2-6}
+% & PRPP-flip & 0.4068 & 0.4670 & \textbf{0.2769} & \textbf{0.3543} \\ \cline{2-6}
+% & PRPP & \textbf{0.4132} & \textbf{0.4962} & 0.2701 & 0.3378 \\ \hline\hline
+% \multirow{4}{*}{wt10g} & QC & 0.1561 & 0.3093 & 0.0712 & 0.2622 \\ \cline{2-6}
+% & QF & 0.1599 & 0.2843 & 0.0657 & 0.2411 \\ \cline{2-6}
+% & PRPP-flip & 0.2586 & 0.3772 & 0.2006 & 0.2844 \\ \cline{2-6}
+% & PRPP & \textbf{0.2710} & \textbf{0.3642} & \textbf{0.1935} & \textbf{0.3053} \\ \hline\hline
+% \multirow{4}{*}{Robust} & QC & 0.2985 & 0.3714 & 0.2266 & 0.2889 \\ \cline{2-6}
+% & QF & 0.1895 & 0.3745 & 0.1389 & \textbf{0.3646} \\ \cline{2-6}
+% & PRPP-flip & 0.3082 & 0.4148 & 0.2783 & 0.3698 \\ \cline{2-6}
+% & PRPP & \textbf{0.3433} & \textbf{0.4273} & \textbf{0.2478} & 0.3634 \\ \hline
 % \end{tabular}
-% \caption{Performance of predictors with Pearson's $r$ and Kendall's $\tau$ correlation using Wikipedia.}
-% \label{table.results.self}
+% \caption{Median and maximum Kendall's $\tau$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
+% \label{table.results.self.kendall}
 % \end{table}
 
 \begin{table}
 \begin{tabular}{|l|l|c|c|c|c|} \hline
 & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
-Corpus & Pred. & Med. & Max & Med. & Max \\ \hline\hline
-\multirow{3}{*}{AP} & QC & \textbf{0.5280} & \textbf{0.6148} & 0.3564 & 0.4284 \\ \cline{2-6}
-& QF & 0.4240 & 0.5637 & 0.3202 & 0.4467 \\ \cline{2-6}
-& PRPP & 0.5030 & 0.6115 & \textbf{0.4025} & \textbf{0.4880} \\ \hline\hline
-\multirow{3}{*}{wt10g} & QC & 0.2232 & 0.3636 & 0.0943 & 0.3436 \\ \cline{2-6}
-& QF & 0.1624 & 0.3847 & 0.0881 & 0.3613 \\ \cline{2-6}
-& PRPP & \textbf{0.2850} & \textbf{0.4615} & \textbf{0.2529} & \textbf{0.4173} \\ \hline\hline
-\multirow{3}{*}{Robust} & QC & 0.4240 & 0.5114 & 0.3129 & 0.3914 \\ \cline{2-6}
-& QF & 0.2203 & 0.5073 & 0.1708 & 0.4926 \\ \cline{2-6}
-& PRPP & \textbf{0.4381} & \textbf{0.5791} & \textbf{0.3222} & \textbf{0.5047} \\ \hline
+Corpus & Pred. & Valid. & Max. & Valid. & Max \\ \hline\hline
+\multirow{4}{*}{AP} & QC & 0.4748 & 0.6148 & 0.2488* & 0.4284 \\ \cline{2-6}
+& QF & 0.5178 & 0.5637 & 0.2368* & 0.4467 \\ \cline{2-6}
+& PRPP-flip & 0.4481 & 0.5661 & 0.4334 & 0.5092 \\ \cline{2-6}
+& PRPP & 0.5003 & 0.6115 & 0.3848 & 0.4880 \\ \hline\hline
+\multirow{4}{*}{wt10g} & QC & 0.2873 & 0.3636 & 0.2271* & 0.3436 \\ \cline{2-6}
+& QF & 0.3758 & 0.3847 & 0.3937 & 0.3613 \\ \cline{2-6}
+& PRPP-flip & 0.2758* & 0.4665 & 0.0957* & 0.3949 \\ \cline{2-6}
+& PRPP & 0.2533* & 0.4615 & -0.0181* & 0.4173 \\ \hline\hline
+\multirow{4}{*}{Robust} & QC & 0.4534 & 0.5114 & 0.3768 & 0.3914 \\ \cline{2-6}
+& QF & 0.5061 & 0.5073 & 0.4884 & 0.4926 \\ \cline{2-6}
+& PRPP-flip & 0.5581 & 0.5743 & 0.4889 & 0.5094 \\ \cline{2-6}
+& PRPP & 0.5602 & 0.5791 & 0.4986 & 0.5047 \\ \hline
 \end{tabular}
 \caption{Median and maximum Pearson's $r$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
 \label{table.results.self.pearson}
@@ -146,27 +199,26 @@ Corpus & Pred. & Med. & Max & Med. & Max \\ \hline\hline
 \begin{tabular}{|l|l|c|c|c|c|} \hline
 & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
 Corpus & Pred. & Med. & Max & Med. & Max \\ \hline\hline
-\multirow{3}{*}{AP} & QC & 0.3609 & 0.4440 & 0.2166 & 0.2807 \\ \cline{2-6}
-& QF & 0.3259 & 0.4215 & 0.2042 & 0.3100 \\ \cline{2-6}
-& PRPP & \textbf{0.4132} & \textbf{0.4962} & \textbf{0.2701} & \textbf{0.3378} \\ \hline\hline
-\multirow{3}{*}{wt10g} & QC & 0.1561 & 0.3093 & 0.0712 & 0.2622 \\ \cline{2-6}
-& QF & 0.1599 & 0.2843 & 0.0657 & 0.2411 \\ \cline{2-6}
-& PRPP & \textbf{0.2710} & \textbf{0.3642} & \textbf{0.1935} & \textbf{0.3053} \\ \hline\hline
-\multirow{3}{*}{Robust} & QC & 0.2985 & 0.3714 & 0.2266 & 0.2889 \\ \cline{2-6}
-& QF & 0.1895 & 0.3745 & 0.1389 & \textbf{0.3646} \\ \cline{2-6}
-& PRPP & \textbf{0.3433} & \textbf{0.4273} & \textbf{0.2478} & 0.3634 \\ \hline
+\multirow{4}{*}{AP} & QC & & & & \\ \cline{2-6}
+& QF & & & & \\ \cline{2-6}
+& PRPP-flip & & & & \\ \cline{2-6}
+& PRPP & & & & \\ \hline\hline
+\multirow{4}{*}{wt10g} & QC & & & & \\ \cline{2-6}
+& QF & & & & \\ \cline{2-6}
+& PRPP-flip & & & & \\ \cline{2-6}
+& PRPP & & & & \\ \hline\hline
+\multirow{4}{*}{Robust} & QC & & & & \\ \cline{2-6}
+& QF & & & & \\ \cline{2-6}
+& PRPP-flip & & & & \\ \cline{2-6}
+& PRPP & & & & \\ \hline
 \end{tabular}
-\caption{Median and maximum Kendall's $\tau$ correlation of predictors for each correlation. Bolded values are the largest observed per corpus/metric summary.}
+\caption{Median and maximum Kendall's $\tau$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
 \label{table.results.self.kendall}
 \end{table}
 
-
+The results of our predictor as well as the two baselines are shown in Tables \ref{table.results.self.pearson} and \ref{table.results.self.kendall}; the former displays Pearson's $r$ correlation while the latter displays Kendall's $\tau$ rank correlation.
 
 \section{Conclusions}\label{section.conclusions}
-
-\section{Acknowledgments}\label{section.acknowledgments}
-
-This work was supported in part by the US National Science Foundation under Grant No. [blind]. Any opinions, findings, conclusions, or recommendations expressed are those of the authors and do not necessarily reflect the views of the National Science Foundation.
 
 \bibliographystyle{abbrv}
 \bibliography{library}  
