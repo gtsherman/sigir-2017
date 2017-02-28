@@ -102,7 +102,7 @@ Our query performance predictor, which we call the pseudo-relevance performance 
 
 \noindent Several points in the preceding would benefit from clarification.
 
-First, our model makes no assertions about the identity of the performance collection $C_p$. While it is valid to use the target collection as the performance collection, we hypothesize that the use of an external collection may yield better results. We investigate this idea in Section \ref{section.experiments}.
+First, our model makes no assertions about the identity of the performance collection $C_p$. While it is valid to use the target collection as the performance collection, we hypothesize that the use of an external collection may yield better results. We investigate this idea in Section \ref{section.results.external}.
 
 Next, both $r$ and $q$ are free parameters in our approach. In fact, there are two other parameters in our approach: $k$ controls the length of $R_t$, while $n$ controls the length of $R_{pD}$. In general, all parameters should be set empirically. Although not required mathematically, we only allow values of $n$ where $n \leq r$ since setting $n$ greater than $r$ prevents us from retrieving all relevant documents.
 
@@ -122,13 +122,13 @@ We evaluate our procedure using a variety of TREC datasets that represent a vari
 
 We also make use of Wikipedia\footnote{http://en.wikipedia.org} as an external collection in some experiments.
 
-% \subsection{Parameters}\label{section.evaluation.runs}
+\subsection{Parameters}\label{section.evaluation.runs}
 
-% Our predictor requires the setting of several parameters. We set $r$, $k$, and $n$ by 10-fold cross-validation: we sweep over each parameter at the values $\{1, 5, 10, 20, 50, 75, 100\}$; as noted in Section \ref{section.method}, $n$ is only swept at values $\leq r$. We set $q = 20$ for all runs since using the entire length of $D$, $|D|$, is excessively expensive during retrieval.
+Our predictor requires the setting of several parameters. We set $r$, $k$, and $n$ by cross-validation: we sweep over each parameter at the values $\{1, 5, 10, 20, 50, 75, 100\}$; as noted in Section \ref{section.method}, $n$ is only swept at values $\leq r$. We fix $q = 20$ for all runs since using the entire length of $D$, $|D|$, is excessively expensive during retrieval.
 
-% We follow a typical cross-validation procedure, as follows. We split the batch of test queries into ten folds. All runs use the same random division of queries to ensure fair comparisons. For each fold, we evaluate the training queries at each parameter setting and determine which yields the highest correlation with the target metric (e.g. MAP or nDCG). We then apply the optimal parameter setting to the test queries. By concatenating each fold of test queries, we produce a single test run comprising all queries in the batch, on which we can then run a final correlation to evaluate our predictor.
+For each run, we split the query set into two equal sized folds and run 2-fold cross-validation, using the train fold to determine the optimal parameter settings to apply to the test fold. We choose an equal split over other forms of cross-validation in order to provide a relatively large number of queries to each fold, leading to more stable correlation values. We repeat this procedure 100 times, splitting the query set randomly each time, and average the correlation values to compute an average query performance prediction.
 
-% We perform the same procedure on the parameters involved in our baseline predictors, which are discussed in more detail in Section \ref{section.results}.
+We perform the same procedure on the parameters involved in our baseline predictors. Query clarity requires a single parameter: the number of feedback documents; we sweep over the values $\{10, 50, 100, 250, 500, 750, 1000\}$ for this parameter. Query feedback has two parameters: the number of top ranked documents in results lists $L$ and $L'$, for which we consider values of $\{10, 20, 50, 75, 100, 500\}$, and the number of terms included in the newly formed query $Q'$, for which we consider $\{3, 5, 10, 15, 20\}$.
 
 \section{Results}\label{section.results}
 
@@ -174,51 +174,108 @@ We also make use of Wikipedia\footnote{http://en.wikipedia.org} as an external c
 % \label{table.results.self.kendall}
 % \end{table}
 
+% \begin{table}
+% \begin{tabular}{|l|l|c|c|c|c|} \hline
+% & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
+% Corpus & Pred. & Valid. & Max. & Valid. & Max \\ \hline\hline
+% \multirow{4}{*}{AP} & QC & 0.4748 & 0.6148 & 0.2488* & 0.4284 \\ \cline{2-6}
+% & QF & 0.5178 & 0.5637 & 0.2368* & 0.4467 \\ \cline{2-6}
+% & PRPP-flip & 0.4481 & 0.5661 & 0.4334 & 0.5092 \\ \cline{2-6}
+% & PRPP & 0.5003 & 0.6115 & 0.3848 & 0.4880 \\ \hline\hline
+% \multirow{4}{*}{wt10g} & QC & 0.2873 & 0.3636 & 0.2271* & 0.3436 \\ \cline{2-6}
+% & QF & 0.3758 & 0.3847 & 0.3937 & 0.3613 \\ \cline{2-6}
+% & PRPP-flip & 0.2758* & 0.4665 & 0.0957* & 0.3949 \\ \cline{2-6}
+% & PRPP & 0.2533* & 0.4615 & -0.0181* & 0.4173 \\ \hline\hline
+% \multirow{4}{*}{Robust} & QC & 0.4534 & 0.5114 & 0.3768 & 0.3914 \\ \cline{2-6}
+% & QF & 0.5061 & 0.5073 & 0.4884 & 0.4926 \\ \cline{2-6}
+% & PRPP-flip & 0.5581 & 0.5743 & 0.4889 & 0.5094 \\ \cline{2-6}
+% & PRPP & 0.5602 & 0.5791 & 0.4986 & 0.5047 \\ \hline
+% \end{tabular}
+% \caption{Median and maximum Pearson's $r$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
+% \label{table.results.self.pearson}
+% \end{table}
+
 \begin{table}
-\begin{tabular}{|l|l|c|c|c|c|} \hline
+\begin{tabular}{|l|l|l|l|l|l|} \hline
 & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
 Corpus & Pred. & Valid. & Max. & Valid. & Max \\ \hline\hline
-\multirow{4}{*}{AP} & QC & 0.4748 & 0.6148 & 0.2488* & 0.4284 \\ \cline{2-6}
-& QF & 0.5178 & 0.5637 & 0.2368* & 0.4467 \\ \cline{2-6}
-& PRPP-flip & 0.4481 & 0.5661 & 0.4334 & 0.5092 \\ \cline{2-6}
-& PRPP & 0.5003 & 0.6115 & 0.3848 & 0.4880 \\ \hline\hline
-\multirow{4}{*}{wt10g} & QC & 0.2873 & 0.3636 & 0.2271* & 0.3436 \\ \cline{2-6}
-& QF & 0.3758 & 0.3847 & 0.3937 & 0.3613 \\ \cline{2-6}
-& PRPP-flip & 0.2758* & 0.4665 & 0.0957* & 0.3949 \\ \cline{2-6}
-& PRPP & 0.2533* & 0.4615 & -0.0181* & 0.4173 \\ \hline\hline
-\multirow{4}{*}{Robust} & QC & 0.4534 & 0.5114 & 0.3768 & 0.3914 \\ \cline{2-6}
-& QF & 0.5061 & 0.5073 & 0.4884 & 0.4926 \\ \cline{2-6}
-& PRPP-flip & 0.5581 & 0.5743 & 0.4889 & 0.5094 \\ \cline{2-6}
-& PRPP & 0.5602 & 0.5791 & 0.4986 & 0.5047 \\ \hline
+\multirow{3}{*}{AP} & QC & 0.3933 & 0.5742 & 0.1858 & 0.3487 \\ \cline{2-6}
+& QF & 0.3561 & 0.5637 & 0.2386 & 0.4467 \\ \cline{2-6}
+%& PRPP-flip & 0.3518 & 0.5661 & \textbf{0.2805} & \textbf{0.5092} \\ \cline{2-6}
+& PRPP & \textbf{0.4152}$^{cf}$ & \textbf{0.6115} & \textbf{0.2513}$^{c}$ & \textbf{0.4880} \\ \hline\hline
+\multirow{3}{*}{wt10g} & QC & 0.1054 & 0.2226 & 0.0027 & 0.0674* \\ \cline{2-6}
+& QF & 0.2220 & 0.3847 & 0.1775 & 0.3613 \\ \cline{2-6}
+%& PRPP-flip & 0.2687 & \textbf{0.4665} & 0.1961 & 0.3949 \\ \cline{2-6}
+& PRPP & \textbf{0.2912}$^{cf}$ & \textbf{0.4615} & \textbf{0.1965}$^{c}$ & \textbf{0.4173} \\ \hline\hline
+\multirow{3}{*}{Robust} & QC & 0.2942 & 0.4284 & 0.2292 & 0.3165 \\ \cline{2-6}
+& QF & 0.3544 & 0.5073 & \textbf{0.3347} & 0.4926 \\ \cline{2-6}
+%& PRPP-flip & 0.3973 & 0.5743 & \textbf{0.3410} & \textbf{0.5094} \\ \cline{2-6}
+& PRPP & \textbf{0.3985}$^{cf}$ & \textbf{0.5791} & 0.3297$^{c}$ & \textbf{0.5047} \\ \hline
 \end{tabular}
-\caption{Median and maximum Pearson's $r$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
+\caption{Cross-validated and maximum Pearson's $r$ correlation of predictors for each collection. $^c$ and $^f$ indicate statistically significant improvement at $p < 0.05$ over query clarity and query feedback respectively. Bolded values are the largest observed per corpus/metric summary. All correlations are statistically significant unless marked with an asterisk (*).}
 \label{table.results.self.pearson}
 \end{table}
 
 \begin{table}
-\begin{tabular}{|l|l|c|c|c|c|} \hline
+\begin{tabular}{|l|l|l|l|l|l|} \hline
 & & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
-Corpus & Pred. & Med. & Max & Med. & Max \\ \hline\hline
-\multirow{4}{*}{AP} & QC & & & & \\ \cline{2-6}
-& QF & & & & \\ \cline{2-6}
-& PRPP-flip & & & & \\ \cline{2-6}
-& PRPP & & & & \\ \hline\hline
-\multirow{4}{*}{wt10g} & QC & & & & \\ \cline{2-6}
-& QF & & & & \\ \cline{2-6}
-& PRPP-flip & & & & \\ \cline{2-6}
-& PRPP & & & & \\ \hline\hline
-\multirow{4}{*}{Robust} & QC & & & & \\ \cline{2-6}
-& QF & & & & \\ \cline{2-6}
-& PRPP-flip & & & & \\ \cline{2-6}
-& PRPP & & & & \\ \hline
+Corpus & Pred. & Valid. & Max. & Valid. & Max. \\ \hline\hline
+\multirow{3}{*}{AP} & QC & 0.3965 & 0.4157 & 0.1997 & 0.2276 \\ \cline{2-6}
+& QF & 0.3601 & 0.4215 & 0.2381 & 0.3010 \\ \cline{2-6}
+%& PRPP-flip & 0.4129 & 0.4670 & \textbf{0.2757} & \textbf{0.3543} \\ \cline{2-6}
+& PRPP & \textbf{0.4554}$^{cf}$ & \textbf{0.4962} & \textbf{0.2521}$^{c}$ & \textbf{0.3378} \\ \hline\hline
+\multirow{3}{*}{wt10g} & QC & 0.0779 & 0.1221* & -0.0017 & 0.0262*\\ \cline{2-6}
+& QF & 0.2088 & 0.2843 & 0.1529 & 0.2411 \\ \cline{2-6}
+%& PRPP-flip & \textbf{0.3020} & \textbf{0.3772} & 0.1960 & 0.2844\\ \cline{2-6}
+& PRPP & \textbf{0.2734}$^{cf}$ & \textbf{0.3642} & \textbf{0.2207}$^{cf}$ & \textbf{0.3053} \\ \hline\hline
+\multirow{3}{*}{Robust} & QC & 0.3070 & 0.3159 & 0.2357 & 0.2418 \\ \cline{2-6}
+& QF & 0.3508 & 0.3745 & 0.3347 & \textbf{0.3646} \\ \cline{2-6}
+%& PRPP-flip & 0.4029 & 0.4148 & 0.3410 & \textbf{0.3698} \\ \cline{2-6}
+& PRPP & \textbf{0.4129}$^{cf}$ & \textbf{0.4273} & \textbf{0.3442}$^{cf}$ & 0.3634 \\ \hline
 \end{tabular}
-\caption{Median and maximum Kendall's $\tau$ correlation of predictors for each collection. Bolded values are the largest observed per corpus/metric summary.}
+\caption{Cross-validated and maximum Kendall's $\tau$ correlation of predictors for each collection. $^c$ and $^f$ indicate statistically significant improvement at $p < 0.05$ over query clarity and query feedback respectively. Bolded values are the largest observed per corpus/metric summary. All correlations are statistically significant unless marked with an asterisk (*).}
 \label{table.results.self.kendall}
 \end{table}
 
-The results of our predictor as well as the two baselines are shown in Tables \ref{table.results.self.pearson} and \ref{table.results.self.kendall}; the former displays Pearson's $r$ correlation while the latter displays Kendall's $\tau$ rank correlation.
+The results of our predictor as well as the two baselines are shown in Tables \ref{table.results.self.pearson} and \ref{table.results.self.kendall}; the former displays Pearson's $r$ correlation with the target metric (MAP or nDCG@20) while the latter displays Kendall's $\tau$ rank correlation.
 
-\section{Conclusions}\label{section.conclusions}
+We report the average of the cross-validated runs in the "Valid." column. Values marked with superscripts indicate statistically significant improvement over baselines at $p < 0.05$ using a one-tailed paired t-test. The tables show that PRPP outperforms the baselines whenever MAP is the target metric; it also outperforms QC with nDCG@20 as the target metric in all cases and outperforms QF for wt10g and robust with Kendall's $\tau$ correlation.
+
+We also report the maximum correlation value seen across all parameter settings. This is an oracle metric in that it uses the full set of queries and therefore the full set of relevance judgments. As can be seen in Tables \ref{table.results.self.pearson} and \ref{tbale.results.self.kendall}, the maximum prediction accuracy of PRPP is usually the highest across predictors and is often much higher than either baseline. The maximum value is included because it is suggestive of the potential of each predictor.
+
+\subsection{Using External Corpora for Prediction}\label{section.results.external}
+
+\begin{table}
+\begin{tabular}{|l|l|l|l|l|l|} \hline
+& & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
+Corpus & Pred. & Valid. & Max. & Valid. & Max. \\ \hline\hline
+\multirow{2}{*}{AP} & QC-wiki & 0.1938$^{\downarrow}$ & & 0.0873$^{\downarrow}$ & \\ \cline{2-6}
+& PRPP-wiki & 0.4495$^{\uparrow}$ & & 0.3593$^{\uparrow}$ & \\ \hline\hline
+\multirow{2}{*}{wt10g} & QC-wiki & 0.1496$^{\uparrow}$ & & 0.0996$^{\uparrow}$ & \\ \cline{2-6}
+& PRPP-wiki & 0.3344$^{\uparrow}$ & & 0.2851$^{\uparrow}$ & \\ \hline\hline
+\multirow{2}{*}{Robust} & QC-wiki & 0.2359$^{\downarrow}$ & & 0.2078$^{\downarrow}$ & \\ \cline{2-6}
+& PRPP-wiki & 0.3778$^{\downarrow}$ & & 0.2984$^{\downarrow}$ & \\ \hline
+\end{tabular}
+\caption{}
+\label{table.results.wiki.pearson}
+\end{table}
+
+\begin{table}
+\begin{tabular}{|l|l|l|l|l|l|} \hline
+& & \multicolumn{2}{c|}{MAP} & \multicolumn{2}{c|}{nDCG@20} \\ \cline{3-6}
+Corpus & Pred. & Valid. & Max. & Valid. & Max. \\ \hline\hline
+\multirow{2}{*}{AP} & QC-wiki & 0.1872$^{\downarrow}$ & & 0.0924$^{\downarrow}$ & \\ \cline{2-6}
+& PRPP-wiki & 0.4693$^{\uparrow}$ & & 0.3589$^{\uparrow}$ & \\ \hline\hline
+\multirow{2}{*}{wt10g} & QC-wiki & 0.1538$^{\uparrow}$ & & 0.1028$^{\uparrow}$ & \\ \cline{2-6}
+& PRPP-wiki & 0.3272$^{\uparrow}$ & & 0.2845$^{\uparrow}$ & \\ \hline\hline
+\multirow{2}{*}{Robust} & QC-wiki & 0.2295$^{\downarrow}$ & & 0.2001$^{\downarrow}$ & \\ \cline{2-6}
+& PRPP-wiki & 0.3693$^{\downarrow}$ & & 0.3040$^{\downarrow}$ & \\ \hline
+\end{tabular}
+\caption{}
+\label{table.results.wiki.kendall}
+\end{table}
+
+\section{Discussion \& Conclusions}\label{section.conclusions}
 
 \bibliographystyle{abbrv}
 \bibliography{library}  
