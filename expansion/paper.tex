@@ -27,7 +27,7 @@
 %\author{Garrick Sherman}
 \author{[Blind]}
 
-\title{Relevance Modeling with Documents Expanded Using External Collections}
+\title{Document Expansion Using External Collections}
 
 \maketitle
 \begin{abstract}
@@ -38,7 +38,7 @@ Document expansion has been shown to improve the effectiveness of information re
 
 %When using language models (LMs) to perform document retrieval, we treat the query and document texts as observations from unseen (and unobservable) probabilistic processes. In the query likelihood (QL) retrieval model, we rank each document by the likelihood that its language model would ``generate'' the query text. However, if the query is a sample from an underlying stochastic process, it is generally too sparse to fully represent an informtion need.
 
-Relevance modeling is an extremely influential pseudo-relevance feedback technique in which we assume that both queries and documents are observations sampled from a relevance model (RM) \cite{Lavrenko2001}, which is a probability distribution over terms in relevant documents. Because we do not have true relevance feedback, relevance modeling makes use of the query likelihood, $P(Q|D)$, to quantify the degree to which words in each document should contribute to the final model $R$. However, since no document is perfectly representative of its underlying generative model, we may be reasonably concerned that our estimate of $P(Q|D)$ is the result of chance. That is, there is no guarantee that $D$ is a representative sample from $R$. The quality of our RM, therefore, may benefit from a higher quality document representation than that which is available in the collection.
+Relevance modeling is an extremely influential pseudo-relevance feedback technique in which we assume that both queries and documents are observations sampled from a relevance model (RM) \cite{Lavrenko2001}, which is a probability distribution over terms in relevant documents. Because we do not have true relevance feedback, relevance modeling makes use of the query likelihood, $P(Q|D)$, to quantify the degree to which words in each document should contribute to the final model $R$. However, since no document is perfectly representative of its underlying generative model, we may be reasonably concerned that our estimate of $P(Q|D)$ is the result of chance. That is, there is no guarantee that $D$ is a representative sample from $R$. The quality of our RM, therefore, may benefit from a higher quality document representation than that which is estimated from the text of $D$.
 
 We employ two techniques to attempt to improve our document language models: document expansion and the use of external document collections. Expandeded documents are expected to exhibit less random variation in term frequencies, improving probability estimates. We hope that estimates may be further refined by expanding documents using \textit{external} collections, thereby avoiding any term bias exhibited by relevant documents in an individual collection.
 
@@ -91,7 +91,7 @@ Assuming uniform document prior probabilities, relevance models take the form of
 	P(w|R) = \sum_{D \in C} P(w|D) P(Q|D)
 \end{flalign}
 
-\noindent where $P(Q|D)$ is calculated as in Eq. \ref{equation.ql} and essentially weights word $w$ in $D$ by the query likelihood of the document. Relevance models are most efficient and robust when calculated over only the top ranked documents and limited to the top terms. These parameters are referred to as $fbDocs$ and $fbTerms$ respectively in Table \ref{table.parameters}.
+\noindent where $P(Q|D)$ is calculated as in Eq. \ref{equation.ql} and essentially weights word $w$ in $D$ by the query likelihood of the document. Relevance models are most efficient and robust when calculated over only the top ranked documents and limited to the top terms. These parameters are referred to as $fbDocs$ and $fbTerms$ respectively in Table \ref{table.parameters} below.
 
 Because relevance models are prone to query drift, it is often desirable to linearly interpolate an RM with the original query model to improve effectiveness:
 
@@ -138,7 +138,7 @@ Given our motivating intuition that document expansion allows for the more accur
 
 \subsection{Data}\label{section.evaluation.collections}
 
-Although Eq. \ref{eq.ql-and-expansion-mult} allows for an arbitrary number of collections, for now we limit ourselves to two: the collection that the document appears in (the ``target'' collection) and Wikipedia\footnote{http://en.wikipedia.org}. The latter, as a general encyclopedia, is hypothesized to yield relatively unbiased probability estimates. We build an Indri\footnote{http://www.lemurproject.org/indri/} index over the Wikipedia page text.
+Although Eq. \ref{eq.ql-and-expansion-mult} allows for an arbitrary number of collections, for now we limit ourselves to two: the collection that the document appears in (the ``target'' collection) and Wikipedia\footnote{http://en.wikipedia.org}. We expect the latter, as a general encyclopedia, to yield relatively unbiased probability estimates. We build an Indri\footnote{http://www.lemurproject.org/indri/} index over the Wikipedia page text.
 
 We test our approach using TREC datasets:
 \begin{itemize}
