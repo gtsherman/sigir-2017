@@ -1,4 +1,5 @@
 \documentclass[sigconf]{acmart}
+\usepackage{afterpage}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{array}
@@ -20,19 +21,24 @@
 \newcommand\rankeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily rank}}}{=}}}
 \newcommand{\bigcell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}
 
-\setlist[itemize]{noitemsep}  % remove space between list items
+\setcounter{topnumber}{8}
+\setcounter{bottomnumber}{8}
+\setcounter{totalnumber}{8}
 
 \begin{document}
 
 \author{Garrick Sherman}
+\affiliation{School of Information Sciences\\University of Illinois at Urbana-Champaign}
+\email{gsherma2@illinois.edu}
+\author{Miles Efron}
+\affiliation{School of Information Sciences\\University of Illinois at Urbana-Champaign}
+\email{mefron@illinois.edu}
 
 \copyrightyear{2017}
 \acmYear{2017}
-\setcopyright{acmcopyright}
-\acmConference{SIGIR '17}{}{August 7--11, 2017, Shinjuki, Tokyo, Japan}
-\acmPrice{15.00.}
-\acmDOI{http://dx.doi.org/10.1145/XXXXXXX.XXXXXXX}
-\acmISBN{ISBN 978-1-4503-5022-8/17/08}
+\setcopyright{acmlicensed}
+\acmConference{SIGIR '17}{August 07-11, 2017}{Shinjuku, Tokyo, Japan}\acmPrice{15.00}\acmDOI{http://dx.doi.org/10.1145/3077136.3080716}
+\acmISBN{978-1-4503-5022-8/17/08}
 
 \title{Document Expansion Using External Collections}
 
@@ -146,36 +152,37 @@ Given our motivating intuition that document expansion allows for the more accur
 
 \subsection{Data}\label{section.evaluation.collections}
 
-Although Eq.~\ref{eq.ql-and-expansion-mult} allows for an arbitrary number of collections, for now we limit ourselves to two: the collection that the document appears in (the ``target'' collection) and Wikipedia\footnote{http://en.wikipedia.org}. We expect the latter, as a general encyclopedia, to yield relatively unbiased probability estimates. We build an Indri\footnote{http://www.lemurproject.org/indri/} index over the Wikipedia page text.
+Although Eq.~\ref{eq.ql-and-expansion-mult} allows for an arbitrary number of collections, for now we limit ourselves to two: the collection that the document appears in (the ``target'' collection) and Wikipedia\footnote{http://en.wikipedia.org}. We expect the latter, as a general encyclopedia, to yield relatively unbiased probability estimates. We build an Indri \cite{Strohman2005} index over the Wikipedia page text.
 
 We test our approach using TREC datasets:
 \begin{itemize}
-	\item The \textbf{AP} newswire collection from TREC disks 1 and 2 with topics 101-200.
-	\item The \textbf{robust} 2004 topics, numbering 250, from TREC disks 4 and 5.
-	\item The \textbf{wt10g} collection with the 100 topics from the 2000 and 2001 TREC Web tracks.
+	\item The \textbf{AP} newswire collection \cite{Harman1992} from TREC disks 1 and 2 with topics 101-200.
+	\item The \textbf{robust} 2004 \cite{Voorhees2005} topics, numbering 250, from TREC disks 4 and 5.
+	\item The \textbf{wt10g} collection \cite{Bailey2003} with the 100 topics from the 2000 and 2001 TREC Web tracks.
 \end{itemize}
 
 These datasets provide a good range of collection types, from relatively homogeneous with well-formed documents (AP) to heterogeneous with varied document quality (wt10g).
 
 \subsection{Runs}\label{section.evaluation.runs}
 
-For each collection, we produce eight runs representing a combination of expansion source and query expansion type.
+For each collection, we produce eight runs representing a combination of expansion source and query expansion model. Expansion source refers to the collection(s) used for document expansion, while the query expansion model refers to unexpanded queries (QL) or expanded queries (RM3).
 
 We produce runs with expansion documents from:
 \begin{itemize}
-	\item the target collection itself, called \textit{self};
-	\item Wikipedia, called \textit{wiki};
-	\item a mixture of the previous two, called \textit{combined}; or
 	\item no expansion, called \textit{baseline};
+	\item the target collection itself, called \textit{self};
+	\item Wikipedia, called \textit{wiki}; or
+	\item a mixture of the previous two, called \textit{combined}.
 \end{itemize}
 
-\noindent For each source, both the QL and RM3 variations are tested.
+\noindent For each source, both the QL and RM3 variations are compared.
 
 Stop words are removed from the query. For efficiency, we retrieve the top 1000 documents using the default Indri QL implementation and re-rank these documents based on their expanded representations as described in Section~\ref{section.model}.
 
 \subsection{Parameters}\label{section.evaluation.parameters}
 
 \begin{table}[htb]
+\caption{Parameter settings for the document expansion procedure and retrieval model}
 \centering
 \begin{tabular}{|c|p{0.29\textwidth}|c|} \hline
 {\bf Param.} & {\bf Meaning} & {\bf Value} \\ \hline
@@ -187,7 +194,6 @@ $fbDocs$ & The number of feedback documents to use for RM3 runs. & 20 \\ \hline
 $fbTerms$ & The number of terms per document to use for RM3 runs. & 20 \\ \hline
 $\alpha$ & Mixing parameter controlling the weights of the original query and relevance model for RM3 runs. & 0.0-1.0 \\ \hline
 \end{tabular}
-\caption{Parameter settings for the document expansion procedure and retrieval model}
 \label{table.parameters}
 \end{table}
 
@@ -199,16 +205,10 @@ The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fo
 
 \section{Results}\label{section.results}
 
-\begin{figure*}
-\centering
-\includegraphics[width=\linewidth]{figures/expansion-sweep.pdf}
-\caption{Sweeps over the number of expansion documents, $n = \{0, 1, 5, 10, 50\}$, for the \textit{self} and \textit{wiki} QL runs.}
-\label{figure.n-sweeps}
-\end{figure*}
-
-\begin{table}
+\begin{table}[!ht]
+\caption{Performance of runs using various expansion sources with (\textit{RM3}) and without (\textit{QL}) query expansion. Statistical significance at $p \leq 0.05$ is marked with a variety of symbols; underlining further designates $p \leq 0.01$: $\uparrow$ indicates improvement over the baseline QL run; $\Uparrow$ and $\Downarrow$ indicate improvement and decline respectively with respect to the baseline RM3 run; $^{*}$ indicates improvement over the QL run with the same expansion source; $^{S}$ and $^{W}$ indicate improvement over the \textit{self} and \textit{wiki} sources, respectively, of the same run type. Bolded runs are the highest raw score for an evaluation metric in a given collection.}
 \begin{tabular}{|c|c|c|l|l|} \hline
-{\bf Corpus} & {\bf \bigcell{l}{Exp. \\ Source}} & {\bf Run} & {\bf MAP} & {\bf nDCG@20} \\ \hline\hline
+{\bf Corpus} & {\bf \bigcell{l}{Exp. \\ Source}} & {\bf Run} & {\bf MAP} & {\bf nDCG@20} \\ \hline
 
 \rule{0pt}{2.5ex} \multirow{8}{*}{AP} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.2337 & \cellcolor{gray!50}0.4170 \\ \cline{3-5}
 \rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.3310$^{\underline{\uparrow}}$ & \cellcolor{gray!50}0.4855$^{\underline{\uparrow}}$ \\ \cline{2-5}
@@ -217,7 +217,7 @@ The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fo
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.2644$^{\underline{\uparrow}}$ & 0.4582$^{\underline{\uparrow}}$ \\ \cline{3-5}
 \rule{0pt}{2.5ex} & & {\it  RM3} & 0.3334$^{\underline{\uparrow *}}$ & 0.4811$^{\underline{\uparrow} *}$ \\ \cline{2-5}
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Combined} & {\it QL} & 0.2774$^{\underline{\uparrow W}S}$ & 0.4734$^{\underline{\uparrow SW}}$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.3342}$^{\underline{\uparrow *}\Uparrow S}$ & 0.4789$^{\underline{\uparrow}}$ \\ \hline\hline
+\rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.3342}$^{\underline{\uparrow *}\Uparrow S}$ & 0.4789$^{\underline{\uparrow}}$ \\ \hline
 
 \rule{0pt}{2.5ex} \multirow{8}{*}{Robust} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.2183 & \cellcolor{gray!50}0.3867 \\ \cline{3-5}
 \rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.2639$^{\underline{\uparrow}}$ & \cellcolor{gray!50}0.3908$^{\underline{\uparrow}}$ \\ \cline{2-5}
@@ -226,7 +226,7 @@ The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fo
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Wiki} & {\it QL} & 0.2326$^{\underline{\uparrow}}$ & 0.4040$^\uparrow$ \\ \cline{3-5}
 \rule{0pt}{2.5ex} & & {\it RM3} & \textbf{0.2674}$^{\underline{\uparrow *S}}$ & 0.4201$^{\underline{\uparrow\Uparrow S} *}$ \\ \cline{2-5}
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Combined} & {\it QL} & 0.2417$^{\underline{\uparrow W}}$ & 0.4156$^{\underline{\uparrow\Uparrow W} S}$ \\ \cline{3-5}
-\rule{0pt}{2.5ex} & & {\it RM3} & 0.2672$^{\underline{\uparrow *S}}$ & \textbf{0.4205}$^{\underline{\uparrow\Uparrow S}}$ \\ \hline\hline
+\rule{0pt}{2.5ex} & & {\it RM3} & 0.2672$^{\underline{\uparrow *S}}$ & \textbf{0.4205}$^{\underline{\uparrow\Uparrow S}}$ \\ \hline
 
 \rule{0pt}{2.5ex} \multirow{8}{*}{wt10g} & \cellcolor{gray!50} & \cellcolor{gray!50}{\it QL} & \cellcolor{gray!50}0.1683 & \cellcolor{gray!50}0.2816 \\ \cline{3-5}
 \rule{0pt}{2.5ex} & \cellcolor{gray!50} \multirow{-2}{*}{\it Baseline} & \cellcolor{gray!50}{\it RM3} & \cellcolor{gray!50}0.1651 & \cellcolor{gray!50}0.2834$^{\underline{\uparrow}}$ \\ \cline{2-5}
@@ -237,7 +237,6 @@ The values of $\lambda_{\mathcal{E}_D}$ and $\alpha$, are determined using 10-fo
 \rule{0pt}{2.5ex} & \multirow{2}{*}{\it Combined} & {\it QL} & 0.1759$^{\uparrow\Uparrow S}$ & 0.3148$^{\underline{\uparrow\Uparrow} SW}$ \\ \cline{3-5}
 \rule{0pt}{2.5ex} & & {\it RM3} & 0.2061$^{\underline{\uparrow\Uparrow *S}}$ & 0.3082$^{\underline{\uparrow\Uparrow S}}$ \\ \hline
 \end{tabular}
-\caption{Performance of runs using various expansion sources with (\textit{RM3}) and without (\textit{QL}) query expansion. Statistical significance at $p \leq 0.05$ is marked with a variety of symbols; underlining further designates $p \leq 0.01$: $\uparrow$ indicates improvement over the baseline QL run; $\Uparrow$ and $\Downarrow$ indicate improvement and decline respectively with respect to the baseline RM3 run; $^{*}$ indicates improvement over the QL run with the same expansion source; $^{S}$ and $^{W}$ indicate improvement over the \textit{self} and \textit{wiki} sources, respectively, of the same run type. Bolded runs are the highest raw score for an evaluation metric in a given collection.}
 \label{table.effectiveness}
 \end{table}
 
@@ -249,13 +248,22 @@ Performance of RM3 runs is more surprising with improvement over the baseline RM
 
 In general, \textit{wiki} runs perform similarly to \textit{combined} runs. However, the strong performance of \textit{combined} runs is visible when query expansion is ignored: five out of six \textit{combined} QL runs show statistically significant improvement over \textit{wiki} QL runs. In one case (wt10g measuring nDCG@20) the \textit{combined} QL run even outperforms the \textit{wiki} RM3 run with statistical significance.
 
+%\afterpage{\clearpage}
+
 \subsection{Sensitivity to \boldmath$n$}\label{section.n-sensitivity}
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.76\linewidth]{figures/expansion-sweep.pdf}
+\caption{Sweeps over the number of expansion documents, $n = \{0, 1, 5, 10, 50\}$, for the \textit{self} and \textit{wiki} QL runs.}
+\label{figure.n-sweeps}
+\end{figure*}
 
 Figure~\ref{figure.n-sweeps} shows sweeps over several values of $n$, the number of expansion documents, for the \textit{self} and \textit{wiki} QL runs using our established cross-validation procedure with identical folds. The sensitivity to $n$ is not pronounced at $n \geq 5$, and what little variation exists is not consistent across collections. We therefore set $n$ to 10, an apparently safe value, for all other runs. This is a convenient result since it allows for more efficient document expansion.
 
 \section{Conclusions}\label{section.conclusions}
 
-The results indicate that our approach for document expansion works well in general and especially in concert with traditional relevance modeling. We find that we can improve on traditional document expansion by incorporating external collections into the expansion process. In the future, we plan to investigate in detail the relationship between homogeneity of documents and the effectiveness of our model.
+The results indicate that our approach for document expansion works well in general and especially in concert with traditional relevance modeling. We find that we can improve on traditional document expansion by incorporating external collections into the expansion process. In the future, we plan to investigate how important the choice of external collection is to the retrieval effectiveness of our model.
 
 %\section{Acknowledgments}\label{section.acknowledgments}
 
